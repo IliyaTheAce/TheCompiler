@@ -21,5 +21,18 @@ public enum TokenType
     
     Semicolon,
     
+    If,
+    
+    DoubleEquals,
+    NotEquals,
+    Not,
+    GreaterThan,
+    LessThan,
+    GreaterThanEquals,
+    LessThanEquals,
+    
+    OpenBracket,
+    CloseBracket,
+    
     EndOfFile
 }

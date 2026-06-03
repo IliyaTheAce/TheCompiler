@@ -44,10 +44,13 @@ public class Lexer(string source)
                 }
                 var text = source.Substring(start, _position - start);
 
+                
+                // Keyword lookup
                 var type = text switch
                 {
                     "let" => TokenType.Let,
                     "print" => TokenType.Print,
+                    "if" => TokenType.If,
                     _ => TokenType.Identifier
                 };
                 _tokens.Add(new Token(type, text,_line,startPosition));
@@ -61,8 +64,55 @@ public class Lexer(string source)
                     _tokens.Add(new Token(TokenType.Plus, "+",_line,startPosition));
                     break;
 
+                case '-':
+                    _tokens.Add(new Token(TokenType.Minus, "-",_line,startPosition));
+                    break;
+
+                case '*':
+                    _tokens.Add(new Token(TokenType.Star, "*",_line,startPosition));
+                    break;
+
+                case '/':
+                    _tokens.Add(new Token(TokenType.Slash, "/",_line,startPosition));
+                    break;
+
                 case '=':
+                    if (Peek() == '=')
+                    {
+                        _tokens.Add(new Token(TokenType.DoubleEquals, "==",_line,startPosition));
+                        Advance();
+                        break;
+                    }
                     _tokens.Add(new Token(TokenType.Equal, "=",_line,startPosition));
+                    break;    
+                case '!':
+                    if (Peek() == '=')
+                    {
+                        _tokens.Add(new Token(TokenType.NotEquals, "!=",_line,startPosition));
+                        Advance();
+                        break;
+                    }
+                    _tokens.Add(new Token(TokenType.Not, "!",_line,startPosition));
+                    break;
+                
+                case '>':
+                    if (Peek() == '=')
+                    {
+                        _tokens.Add(new Token(TokenType.GreaterThanEquals, ">=",_line,startPosition));
+                        Advance();
+                        break;
+                    }
+                    _tokens.Add(new Token(TokenType.GreaterThan, ">",_line,startPosition));
+                    break;
+                
+                case '<':
+                    if (Peek() == '=')
+                    {
+                        _tokens.Add(new Token(TokenType.LessThanEquals, "<=",_line,startPosition));
+                        Advance();
+                        break;
+                    }
+                    _tokens.Add(new Token(TokenType.LessThan, "<",_line,startPosition));
                     break;
 
                 case ';':
@@ -76,10 +126,20 @@ public class Lexer(string source)
                 case ')':
                     _tokens.Add(new Token(TokenType.CloseParan, ")",_line,startPosition));
                     break;
+                
+                case '{':
+                    _tokens.Add(new Token(TokenType.OpenBracket, "{",_line,startPosition));
+                    break;
+                
+                case '}':
+                    _tokens.Add(new Token(TokenType.CloseBracket, "}",_line,startPosition));
+                    break;
             }
             
             Advance();
         }
+        
+        _tokens.Add(new Token(TokenType.EndOfFile, "",_line,_position));
 
         return _tokens;
     }
@@ -101,5 +161,10 @@ public class Lexer(string source)
         }
 
         return current;
+    }
+
+    private char Peek()
+    {
+        return source[_position + 1];
     }
 }
