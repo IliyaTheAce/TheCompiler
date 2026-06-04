@@ -27,6 +27,9 @@ public class Parser(List<Token> tokens)
         
         if (Match(TokenType.If))
             return ParseIfStatement();
+        
+        if (Match(TokenType.While))
+            return ParseWhileStatement();
 
         throw new Exception("Unknown statement");
     }
@@ -43,6 +46,20 @@ public class Parser(List<Token> tokens)
             blockStatements.Add(ParseStatement());
         }
         return new IfStatement(condition, blockStatements);
+    }
+    
+    private Statement ParseWhileStatement()
+    {
+        Consume(TokenType.OpenParan);
+        Expression condition = ParseExpression();
+        Consume(TokenType.CloseParan);
+        Consume(TokenType.OpenBracket);
+        var blockStatements = new List<Statement>();
+        while (!Match(TokenType.CloseBracket))
+        {
+            blockStatements.Add(ParseStatement());
+        }
+        return new WhileStatement(condition, blockStatements);
     }
 
     private Statement ParseVariableDeclaration()

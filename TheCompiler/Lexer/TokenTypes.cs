@@ -22,6 +22,7 @@ public enum TokenType
     Semicolon,
     
     If,
+    While,
     
     DoubleEquals,
     NotEquals,

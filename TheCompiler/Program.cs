@@ -3,7 +3,7 @@ using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
 
-string source = File.ReadAllText("../../../Samples/Source3.tc");
+string source = File.ReadAllText("../../../Samples/Source4.tc");
 
 // Console.WriteLine(source);
 var lexer  = new Lexer(source);
@@ -52,6 +52,16 @@ void Print(Statement stmt, string indent = "")
             AstPrinter.Print(If.Condition, indent + "   ");
             Console.WriteLine($"{indent}Body:");
             foreach (Statement blockStatement in If.Block)
+            { 
+                Print(blockStatement , "   ");
+            }
+            break;  
+        case WhileStatement While:
+            Console.WriteLine($"{indent}WhileStatement");
+            Console.WriteLine($"{indent}Condition:");
+            AstPrinter.Print(While.Condition, indent + "   ");
+            Console.WriteLine($"{indent}Body:");
+            foreach (Statement blockStatement in While.Block)
             { 
                 Print(blockStatement , "   ");
             }

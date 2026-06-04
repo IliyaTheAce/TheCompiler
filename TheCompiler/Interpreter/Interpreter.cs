@@ -30,6 +30,10 @@ public class Interpreter
             case IfStatement ifStmt:
                 ExecuteIfStatement(ifStmt);
                 break;
+            
+            case WhileStatement whileStmt:
+                ExecuteWhileStatement(whileStmt);
+                break;
         }
     }
     
@@ -56,6 +60,19 @@ public class Interpreter
                 Evaluate(statement.Condition));
 
         if (condition)
+        {
+            foreach (var bodyStatement in statement.Block)
+            {
+                ExecuteStatement(bodyStatement);
+            }
+        }
+    }
+    
+    private void ExecuteWhileStatement(
+        WhileStatement statement)
+    {
+        while (Convert.ToBoolean(
+                   Evaluate(statement.Condition)))
         {
             foreach (var bodyStatement in statement.Block)
             {
