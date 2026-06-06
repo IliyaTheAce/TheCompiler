@@ -35,5 +35,8 @@ public enum TokenType
     OpenBracket,
     CloseBracket,
     
+    True,
+    False,
+    
     EndOfFile
 }

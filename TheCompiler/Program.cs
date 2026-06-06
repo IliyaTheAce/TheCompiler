@@ -3,7 +3,7 @@ using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
 
-string source = File.ReadAllText("../../../Samples/Source4.tc");
+string source = File.ReadAllText("../../../Samples/Source5.tc");
 
 // Console.WriteLine(source);
 var lexer  = new Lexer(source);

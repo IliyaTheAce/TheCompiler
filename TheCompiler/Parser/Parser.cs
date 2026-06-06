@@ -200,6 +200,17 @@ public class Parser(List<Token> tokens)
             return expr;
         }
 
+        if (Match(TokenType.True))
+        {
+            return new BooleanExpression(true);
+        }
+        
+        if (Match(TokenType.False))
+        {
+            return new BooleanExpression(false);
+        }
+        
+
         throw new Exception(
             $"Unexpected token {Peek().Type}"
         );

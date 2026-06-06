@@ -103,7 +103,10 @@ public class Interpreter
                 return _variables[identifier.Name];
 
             case BinaryExpression binary:
-                return EvaluateBinary(binary);
+                return EvaluateBinary(binary);     
+            
+            case BooleanExpression boolean:
+                return boolean.Value;
 
             default:
                 throw new Exception(

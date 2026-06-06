@@ -52,6 +52,8 @@ public class Lexer(string source)
                     "print" => TokenType.Print,
                     "if" => TokenType.If,
                     "while" => TokenType.While,
+                    "true" => TokenType.True,
+                    "false" => TokenType.False,
                     _ => TokenType.Identifier
                 };
                 _tokens.Add(new Token(type, text,_line,startPosition));
