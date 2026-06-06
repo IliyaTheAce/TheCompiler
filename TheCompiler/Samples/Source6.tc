@@ -1,0 +1,13 @@
+print(true and true);
+print(true and false);
+
+print(true or false);
+print(false or false);
+
+print(!true);         
+print(!false);       
+
+print(true or false and false);
+print((true or false) and false);
+
+print(-10 + 2);

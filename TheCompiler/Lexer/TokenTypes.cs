@@ -32,6 +32,9 @@ public enum TokenType
     GreaterThanEquals,
     LessThanEquals,
     
+    And,
+    Or,
+    
     OpenBracket,
     CloseBracket,
     

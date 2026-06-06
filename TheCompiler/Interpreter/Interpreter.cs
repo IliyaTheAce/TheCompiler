@@ -106,7 +106,10 @@ public class Interpreter
                 return EvaluateBinary(binary);     
             
             case BooleanExpression boolean:
-                return boolean.Value;
+                return boolean.Value;   
+            
+            case UnaryExpression unary:
+                return EvaluateUnary(unary);
 
             default:
                 throw new Exception(
@@ -125,6 +128,35 @@ public class Interpreter
 
         switch (binary.Operator.Type)
         {
+            case TokenType.And:
+            {
+                bool leftValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Left));
+                
+                if (!leftValue)
+                    return false;
+                bool rightValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Right));
+
+                return rightValue;
+            }
+            case TokenType.Or:
+            {
+                bool leftValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Left));
+                
+                if (leftValue)
+                    return true;
+                bool rightValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Right));
+
+                return rightValue;
+            }
+            
             case TokenType.Plus:
                 return left + right;
 
@@ -153,6 +185,23 @@ public class Interpreter
                 throw new Exception(
                     $"Unsupported operator {binary.Operator.Type}"
                 );
+        }
+    }
+    private object EvaluateUnary(UnaryExpression unary)
+    {
+        object value = Evaluate(unary.Right);
+
+        switch (unary.Operator.Type)
+        {
+            case TokenType.Not:
+                return !Convert.ToBoolean(value);
+            
+            case TokenType.Minus:
+                return -Convert.ToInt32(value);
+
+            default:
+                throw new Exception(
+                    $"Unsupported unary operator {unary.Operator.Type}");
         }
     }
 }

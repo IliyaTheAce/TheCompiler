@@ -14,6 +14,15 @@ public class AstPrinter
 
             case IdentifierExpression id:
                 Console.WriteLine($"{indent}Identifier({id.Name})");
+                break;    
+            
+            case BooleanExpression boolean:
+                Console.WriteLine($"{indent}boolean({boolean.Value})");
+                break;  
+            
+            case UnaryExpression unary:
+                Console.WriteLine($"{indent}Not");
+                Print(unary.Right, indent + "  ");
                 break;
 
             case BinaryExpression bin:

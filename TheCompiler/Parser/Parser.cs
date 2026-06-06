@@ -1,5 +1,8 @@
 using TheCompiler.Lexer;
 using TheCompiler.Parser.AST;
+using BinaryExpression = TheCompiler.Parser.AST.BinaryExpression;
+using UnaryExpression = TheCompiler.Parser.AST.UnaryExpression;
+using Expression = TheCompiler.Parser.AST.Expression;
 
 namespace TheCompiler.Parser;
 
@@ -102,8 +105,43 @@ public class Parser(List<Token> tokens)
 
     private Expression ParseExpression()
     {
-        return ParseComparison();
+        return ParseOr();
     }
+
+    private Expression ParseOr()
+    {
+        Expression expr = ParseAnd();
+        
+        while (
+            Peek().Type == TokenType.Or)
+        {
+            Token op = Advance();
+            Expression right = ParseAnd();
+            expr = new BinaryExpression(
+                expr,
+                op,
+                right);
+        }
+        
+        return expr;    
+    }
+
+    private Expression ParseAnd()
+    {
+        Expression expr = ParseComparison();
+        
+        while (
+            Peek().Type == TokenType.And)
+        {
+            Token op = Advance();
+            Expression right = ParseComparison();
+            expr = new BinaryExpression(
+                expr,
+                op,
+                right);
+        }
+        
+        return expr;        }
 
     private Expression ParseComparison()
     {
@@ -151,7 +189,7 @@ public class Parser(List<Token> tokens)
     
     private Expression ParseFactor()
     {
-        Expression expr = ParsePrimary();
+        Expression expr = ParseUnary();
 
         while (
             Peek().Type == TokenType.Star ||
@@ -159,7 +197,7 @@ public class Parser(List<Token> tokens)
         {
             Token op = Advance();
 
-            Expression right = ParsePrimary();
+            Expression right = ParseUnary();
 
             expr = new BinaryExpression(
                 expr,
@@ -169,6 +207,23 @@ public class Parser(List<Token> tokens)
         }
 
         return expr;
+    }
+    
+    private Expression ParseUnary()
+    {
+        if (Match(TokenType.Not) ||
+            Match(TokenType.Minus))
+        {
+            Token op = Previous();
+
+            Expression right = ParseUnary();
+
+            return new UnaryExpression(
+                op,
+                right);
+        }
+
+        return ParsePrimary();
     }
     
     private Expression ParsePrimary()
@@ -208,7 +263,7 @@ public class Parser(List<Token> tokens)
         if (Match(TokenType.False))
         {
             return new BooleanExpression(false);
-        }
+        }    
         
 
         throw new Exception(

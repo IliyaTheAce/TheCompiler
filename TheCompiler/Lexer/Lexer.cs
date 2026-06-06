@@ -54,6 +54,8 @@ public class Lexer(string source)
                     "while" => TokenType.While,
                     "true" => TokenType.True,
                     "false" => TokenType.False,
+                    "and" => TokenType.And,
+                    "or" => TokenType.Or,
                     _ => TokenType.Identifier
                 };
                 _tokens.Add(new Token(type, text,_line,startPosition));

@@ -3,9 +3,8 @@ using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
 
-string source = File.ReadAllText("../../../Samples/Source5.tc");
+string source = File.ReadAllText("../../../Samples/Source6.tc");
 
-// Console.WriteLine(source);
 var lexer  = new Lexer(source);
 var tokens = lexer.GetTokens();
 
@@ -65,6 +64,11 @@ void Print(Statement stmt, string indent = "")
             { 
                 Print(blockStatement , "   ");
             }
+            break;   
+        
+        case VariableAssignment assignment:
+            Console.WriteLine($"{indent}VariableAssignment({assignment.Name})");
+            AstPrinter.Print(assignment.Value, indent + "   ");
             break;
     }
 }
