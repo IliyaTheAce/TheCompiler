@@ -30,8 +30,21 @@ public class Parser(List<Token> tokens)
         
         if (Match(TokenType.While))
             return ParseWhileStatement();
+        
+        if(Match(TokenType.Identifier))
+            return ParseVariableAssignment();
 
         throw new Exception("Unknown statement");
+    }
+
+    private Statement ParseVariableAssignment()
+    {
+        Token name = Previous();
+        Consume(TokenType.Equal);
+        var exp = ParseExpression();
+        Consume(TokenType.Semicolon);
+
+        return new VariableAssignment(exp, name.Lexeme);
     }
 
     private Statement ParseIfStatement()

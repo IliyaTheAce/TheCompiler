@@ -21,6 +21,10 @@ public class Interpreter
         {
             case VariableDeclaration variable:
                 ExecuteVariableDeclaration(variable);
+                break;     
+            
+            case VariableAssignment variable:
+                ExecuteVariableAssignment(variable);
                 break;
 
             case PrintStatement print:
@@ -36,7 +40,14 @@ public class Interpreter
                 break;
         }
     }
-    
+
+    private void ExecuteVariableAssignment(VariableAssignment variable)
+    {
+        object value = Evaluate(variable.Value);
+
+        _variables[variable.Name] = value;
+    }
+
     private void ExecuteVariableDeclaration(
         VariableDeclaration variable)
     {
