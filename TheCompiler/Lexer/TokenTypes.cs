@@ -19,9 +19,12 @@ public enum TokenType
     OpenParan,
     CloseParan,
     
+    DoubleQuote,
+    
     Semicolon,
     
     If,
+    Else,
     While,
     
     DoubleEquals,
@@ -41,5 +44,6 @@ public enum TokenType
     True,
     False,
     
-    EndOfFile
+    EndOfFile,
+    String
 }

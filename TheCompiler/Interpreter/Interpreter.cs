@@ -77,6 +77,14 @@ public class Interpreter
                 ExecuteStatement(bodyStatement);
             }
         }
+        else
+        {
+            if (statement.ElseBlock == null) return;
+            foreach (var elseStatement in statement.ElseBlock)
+            {
+                ExecuteStatement(elseStatement);
+            }
+        }
     }
     
     private void ExecuteWhileStatement(
@@ -96,6 +104,8 @@ public class Interpreter
     {
         switch (expression)
         {
+            case StringExpression stringExpression:
+                return stringExpression.String;
             case NumberExpression number:
                 return number.Value;
 

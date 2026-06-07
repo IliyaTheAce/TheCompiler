@@ -61,7 +61,18 @@ public class Parser(List<Token> tokens)
         {
             blockStatements.Add(ParseStatement());
         }
-        return new IfStatement(condition, blockStatements);
+
+        if (!Match(TokenType.Else)) return new IfStatement(condition, blockStatements, null);
+        
+        var elseBlockStatements = new List<Statement>();
+        
+        Consume(TokenType.OpenBracket);
+            
+        while (!Match(TokenType.CloseBracket))
+        {
+            elseBlockStatements.Add(ParseStatement());
+        }
+        return new IfStatement(condition, blockStatements,elseBlockStatements);
     }
     
     private Statement ParseWhileStatement()
@@ -105,7 +116,10 @@ public class Parser(List<Token> tokens)
 
     private Expression ParseExpression()
     {
-        return ParseOr();
+        if (tokens[_current].Type != TokenType.String) return ParseOr();
+        Expression exp = new StringExpression(tokens[_current].Lexeme);
+        Advance();
+        return exp;
     }
 
     private Expression ParseOr()

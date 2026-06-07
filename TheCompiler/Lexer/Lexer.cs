@@ -33,6 +33,22 @@ public class Lexer(string source)
                 _tokens.Add(new Token(TokenType.Number, number,_line,startPosition));
                 
                 continue;
+            }    
+            
+            if (current == '"')
+            {
+                Advance();
+                var start = _position;
+                while (source[_position] != '"')
+                {
+                    Advance();
+                }
+
+                var str = source.Substring(start, _position - start);
+                _tokens.Add(new Token(TokenType.String, str,_line,startPosition));
+                Advance();
+                
+                continue;
             }
             
             if (char.IsLetter(current))
@@ -51,6 +67,7 @@ public class Lexer(string source)
                     "let" => TokenType.Let,
                     "print" => TokenType.Print,
                     "if" => TokenType.If,
+                    "else" => TokenType.Else,
                     "while" => TokenType.While,
                     "true" => TokenType.True,
                     "false" => TokenType.False,
