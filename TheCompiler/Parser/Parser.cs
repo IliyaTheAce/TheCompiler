@@ -10,13 +10,14 @@ public class Parser(List<Token> tokens)
 {
     private List<Statement> _statements = new();
     private int _current = 0;
+
     public List<Statement> Parse()
     {
         while (_current < tokens.Count && tokens[_current].Type != TokenType.EndOfFile)
         {
             _statements.Add(ParseStatement());
         }
-        
+
         return _statements;
     }
 
@@ -27,17 +28,49 @@ public class Parser(List<Token> tokens)
 
         if (Match(TokenType.Print))
             return ParsePrintStatement();
-        
+
         if (Match(TokenType.If))
             return ParseIfStatement();
-        
+
         if (Match(TokenType.While))
             return ParseWhileStatement();
-        
-        if(Match(TokenType.Identifier))
-            return ParseVariableAssignment();
+
+        if (Match(TokenType.Identifier))
+            return ParseIdentifierStatement();
+
+        if (Match(TokenType.Func))
+            return ParseFunctionDeceleration();
 
         throw new Exception("Unknown statement");
+    }
+
+    private Statement ParseIdentifierStatement()
+    {
+        return Peek().Type == TokenType.OpenParan ? ParseFunctionCallExpression() : ParseVariableAssignment();
+    }
+
+    private Statement ParseFunctionCallExpression()
+    {
+        string name = Previous().Lexeme;
+        Consume(TokenType.OpenParan);
+        Consume(TokenType.CloseParan);
+        Consume(TokenType.Semicolon);
+        return new FunctionCallStatement(name);
+    }
+
+    private Statement ParseFunctionDeceleration()
+    {
+        string name = Consume(TokenType.Identifier).Lexeme;
+        Consume(TokenType.OpenParan);
+        Consume(TokenType.CloseParan);
+        Consume(TokenType.OpenBracket);
+        List<Statement> blockStatements = new();
+        while (!Match(TokenType.CloseBracket))
+        {
+            blockStatements.Add(ParseStatement());
+        }
+
+        return new FunctionDeclaration(name, blockStatements);
     }
 
     private Statement ParseVariableAssignment()
@@ -63,18 +96,19 @@ public class Parser(List<Token> tokens)
         }
 
         if (!Match(TokenType.Else)) return new IfStatement(condition, blockStatements, null);
-        
+
         var elseBlockStatements = new List<Statement>();
-        
+
         Consume(TokenType.OpenBracket);
-            
+
         while (!Match(TokenType.CloseBracket))
         {
             elseBlockStatements.Add(ParseStatement());
         }
-        return new IfStatement(condition, blockStatements,elseBlockStatements);
+
+        return new IfStatement(condition, blockStatements, elseBlockStatements);
     }
-    
+
     private Statement ParseWhileStatement()
     {
         Consume(TokenType.OpenParan);
@@ -86,6 +120,7 @@ public class Parser(List<Token> tokens)
         {
             blockStatements.Add(ParseStatement());
         }
+
         return new WhileStatement(condition, blockStatements);
     }
 
@@ -125,7 +160,7 @@ public class Parser(List<Token> tokens)
     private Expression ParseOr()
     {
         Expression expr = ParseAnd();
-        
+
         while (
             Peek().Type == TokenType.Or)
         {
@@ -136,14 +171,14 @@ public class Parser(List<Token> tokens)
                 op,
                 right);
         }
-        
-        return expr;    
+
+        return expr;
     }
 
     private Expression ParseAnd()
     {
         Expression expr = ParseComparison();
-        
+
         while (
             Peek().Type == TokenType.And)
         {
@@ -154,8 +189,9 @@ public class Parser(List<Token> tokens)
                 op,
                 right);
         }
-        
-        return expr;        }
+
+        return expr;
+    }
 
     private Expression ParseComparison()
     {
@@ -175,7 +211,7 @@ public class Parser(List<Token> tokens)
                 op,
                 right);
         }
-        
+
         return expr;
     }
 
@@ -200,7 +236,7 @@ public class Parser(List<Token> tokens)
 
         return expr;
     }
-    
+
     private Expression ParseFactor()
     {
         Expression expr = ParseUnary();
@@ -222,7 +258,7 @@ public class Parser(List<Token> tokens)
 
         return expr;
     }
-    
+
     private Expression ParseUnary()
     {
         if (Match(TokenType.Not) ||
@@ -239,7 +275,7 @@ public class Parser(List<Token> tokens)
 
         return ParsePrimary();
     }
-    
+
     private Expression ParsePrimary()
     {
         if (Match(TokenType.Number))
@@ -273,29 +309,29 @@ public class Parser(List<Token> tokens)
         {
             return new BooleanExpression(true);
         }
-        
+
         if (Match(TokenType.False))
         {
             return new BooleanExpression(false);
-        }    
-        
+        }
+
 
         throw new Exception(
             $"Unexpected token {Peek().Type}"
         );
     }
-    
-    
+
+
     private Token Previous()
     {
         return tokens[_current - 1];
     }
-    
+
     private Token Peek()
     {
         return tokens[_current];
     }
-    
+
     private Token Advance()
     {
         return tokens[_current++];
@@ -303,12 +339,12 @@ public class Parser(List<Token> tokens)
 
     private bool Match(TokenType type)
     {
-        if(Peek().Type != type)
+        if (Peek().Type != type)
             return false;
         Advance();
         return true;
     }
-    
+
     private Token Consume(TokenType expectedType)
     {
         if (Peek().Type == expectedType)
@@ -322,7 +358,7 @@ public class Parser(List<Token> tokens)
             $"Expected {expectedType} but found {current.Type}."
         );
     }
-    
+
     public static void Print(Expression expr, string indent = "")
     {
         switch (expr)

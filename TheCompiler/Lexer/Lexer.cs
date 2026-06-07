@@ -73,6 +73,7 @@ public class Lexer(string source)
                     "false" => TokenType.False,
                     "and" => TokenType.And,
                     "or" => TokenType.Or,
+                    "func" => TokenType.Func,
                     _ => TokenType.Identifier
                 };
                 _tokens.Add(new Token(type, text,_line,startPosition));

@@ -3,9 +3,9 @@ using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
 
-string source = File.ReadAllText("../../../Samples/Source7.tc");
+string source = File.ReadAllText("../../../Samples/Source8.tc");
 
-var lexer  = new Lexer(source);
+var lexer = new Lexer(source);
 var tokens = lexer.GetTokens();
 
 Console.WriteLine($" ----- Tokens: {tokens.Count} ----- \n");
@@ -15,7 +15,7 @@ foreach (var token in tokens)
 }
 
 var parser = new Parser(tokens);
-var statements  = parser.Parse();
+var statements = parser.Parse();
 
 Console.WriteLine($" ----- Parsed Nodes: {statements.Count} ----- \n");
 foreach (var node in statements)
@@ -43,32 +43,46 @@ void Print(Statement stmt, string indent = "")
             Console.WriteLine($"{indent}PrintStatement");
 
             AstPrinter.Print(print.Exp, indent + "  ");
-            break;  
-        
+            break;
+
         case IfStatement If:
             Console.WriteLine($"{indent}IfStatement");
             Console.WriteLine($"{indent}Condition:");
             AstPrinter.Print(If.Condition, indent + "   ");
             Console.WriteLine($"{indent}Body:");
             foreach (Statement blockStatement in If.Block)
-            { 
-                Print(blockStatement , "   ");
+            {
+                Print(blockStatement, "   ");
             }
-            break;  
+
+            break;
         case WhileStatement While:
             Console.WriteLine($"{indent}WhileStatement");
             Console.WriteLine($"{indent}Condition:");
             AstPrinter.Print(While.Condition, indent + "   ");
             Console.WriteLine($"{indent}Body:");
             foreach (Statement blockStatement in While.Block)
-            { 
-                Print(blockStatement , "   ");
+            {
+                Print(blockStatement, "   ");
             }
-            break;   
-        
+
+            break;
+
         case VariableAssignment assignment:
             Console.WriteLine($"{indent}VariableAssignment({assignment.Name})");
             AstPrinter.Print(assignment.Value, indent + "   ");
+            break;
+
+        case FunctionDeclaration functionDeclaration:
+            Console.WriteLine($"{indent}FunctionDeclaration({functionDeclaration.Name})");
+            foreach (Statement blockStatement in functionDeclaration.Body)
+            {
+                Print(blockStatement, "   ");
+            }
+            break; 
+        
+        case FunctionCallStatement funcCall:
+            Console.WriteLine($"{indent}FunctionCall({funcCall.Name})");
             break;
     }
 }

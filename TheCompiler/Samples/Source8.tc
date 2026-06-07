@@ -1,0 +1,5 @@
+func PrintHello(){
+    print("Hello");
+}
+
+PrintHello();

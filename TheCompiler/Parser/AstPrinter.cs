@@ -31,6 +31,10 @@ public class AstPrinter
                 Print(bin.Left, indent + "  ");
                 Print(bin.Right, indent + "  ");
                 break;
+            
+            case StringExpression str:
+                Console.WriteLine($"{indent}String({str.String})");
+                break;
         }
     }
 }
