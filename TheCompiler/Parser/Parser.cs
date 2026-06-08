@@ -35,33 +35,85 @@ public class Parser(List<Token> tokens)
         if (Match(TokenType.While))
             return ParseWhileStatement();
 
-        if (Match(TokenType.Identifier))
-            return ParseIdentifierStatement();
-
         if (Match(TokenType.Func))
             return ParseFunctionDeceleration();
 
-        throw new Exception("Unknown statement");
+        if (Match(TokenType.Return))
+            return ParseFunctionReturn();
+
+        
+        return ParseExpressionOrAssignmentStatement();
     }
 
-    private Statement ParseIdentifierStatement()
+    private ReturnStatement ParseFunctionReturn()
     {
-        return Peek().Type == TokenType.OpenParan ? ParseFunctionCallExpression() : ParseVariableAssignment();
-    }
-
-    private Statement ParseFunctionCallExpression()
-    {
-        string name = Previous().Lexeme;
-        Consume(TokenType.OpenParan);
-        Consume(TokenType.CloseParan);
+        var value = ParseExpression();
         Consume(TokenType.Semicolon);
-        return new FunctionCallStatement(name);
+        return new ReturnStatement(value);
+    }
+
+    private Statement ParseExpressionOrAssignmentStatement()
+    {
+        Expression expr = ParseExpression();
+
+        // assignment detection
+        if (expr is IdentifierExpression id &&
+            Match(TokenType.Equal))
+        {
+            Expression value = ParseExpression();
+            Consume(TokenType.Semicolon);
+
+            return new VariableAssignment(value,
+                id.Name);
+        }
+
+        Consume(TokenType.Semicolon);
+
+        return new ExpressionStatement(expr);
+    }
+
+    private Expression ParseFunctionCall(Token id)
+    {
+        Consume(TokenType.OpenParan);
+
+        List<Expression> args = new();
+
+        if (Peek().Type != TokenType.CloseParan)
+        {
+            args.Add(ParseExpression());
+
+            while (Peek().Type == TokenType.Comma)
+            {
+                Consume(TokenType.Comma);
+                args.Add(ParseExpression());
+            }
+        }
+
+        Consume(TokenType.CloseParan);
+        return new FunctionCallExpression(id.Lexeme, args);
     }
 
     private Statement ParseFunctionDeceleration()
     {
         string name = Consume(TokenType.Identifier).Lexeme;
         Consume(TokenType.OpenParan);
+
+        List<string> parameters = new();
+        while (true)
+        {
+            if (Peek().Type == TokenType.Identifier)
+            {
+                parameters.Add(Advance().Lexeme);
+            }
+
+            if (Peek().Type != TokenType.Comma)
+            {
+                break;
+            }
+
+            Consume(TokenType.Comma);
+        }
+
         Consume(TokenType.CloseParan);
         Consume(TokenType.OpenBracket);
         List<Statement> blockStatements = new();
@@ -70,17 +122,7 @@ public class Parser(List<Token> tokens)
             blockStatements.Add(ParseStatement());
         }
 
-        return new FunctionDeclaration(name, blockStatements);
-    }
-
-    private Statement ParseVariableAssignment()
-    {
-        Token name = Previous();
-        Consume(TokenType.Equal);
-        var exp = ParseExpression();
-        Consume(TokenType.Semicolon);
-
-        return new VariableAssignment(exp, name.Lexeme);
+        return new FunctionDeclaration(name, blockStatements, parameters);
     }
 
     private Statement ParseIfStatement()
@@ -278,6 +320,7 @@ public class Parser(List<Token> tokens)
 
     private Expression ParsePrimary()
     {
+        Console.WriteLine(tokens[_current]);
         if (Match(TokenType.Number))
         {
             Token token = Previous();
@@ -289,11 +332,12 @@ public class Parser(List<Token> tokens)
 
         if (Match(TokenType.Identifier))
         {
-            Token token = Previous();
+            Token id = Previous();
 
-            return new IdentifierExpression(
-                token.Lexeme
-            );
+            if (Peek().Type == TokenType.OpenParan)
+                return ParseFunctionCall(id);
+
+            return new IdentifierExpression(id.Lexeme);
         }
 
         if (Match(TokenType.OpenParan))
@@ -314,7 +358,6 @@ public class Parser(List<Token> tokens)
         {
             return new BooleanExpression(false);
         }
-
 
         throw new Exception(
             $"Unexpected token {Peek().Type}"
@@ -357,26 +400,5 @@ public class Parser(List<Token> tokens)
             $"column {current.Column}. " +
             $"Expected {expectedType} but found {current.Type}."
         );
-    }
-
-    public static void Print(Expression expr, string indent = "")
-    {
-        switch (expr)
-        {
-            case NumberExpression number:
-                Console.WriteLine($"{indent}Number({number.Value})");
-                break;
-
-            case IdentifierExpression id:
-                Console.WriteLine($"{indent}Identifier({id.Name})");
-                break;
-
-            case BinaryExpression bin:
-                Console.WriteLine($"{indent}Binary({bin.Operator.Lexeme})");
-
-                Print(bin.Left, indent + "  ");
-                Print(bin.Right, indent + "  ");
-                break;
-        }
     }
 }

@@ -1,4 +1,4 @@
-﻿using TheCompiler.Interprator;
+﻿using TheCompiler.Interpreter;
 using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
@@ -75,14 +75,21 @@ void Print(Statement stmt, string indent = "")
 
         case FunctionDeclaration functionDeclaration:
             Console.WriteLine($"{indent}FunctionDeclaration({functionDeclaration.Name})");
+            if (functionDeclaration.Params.Count > 0)
+            {
+
+                Console.WriteLine($"{indent}Parameters:");
+                foreach (var param in functionDeclaration.Params)
+                {
+                    Console.WriteLine($"{indent}    {param}");
+                }
+            }
+
+            Console.WriteLine($"{indent}Block:");
             foreach (Statement blockStatement in functionDeclaration.Body)
             {
                 Print(blockStatement, "   ");
             }
             break; 
-        
-        case FunctionCallStatement funcCall:
-            Console.WriteLine($"{indent}FunctionCall({funcCall.Name})");
-            break;
     }
 }

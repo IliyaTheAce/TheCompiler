@@ -1,5 +1,6 @@
-func PrintHello(){
-    print("Hello");
+let x =5;
+x = 10;
+func PrintHello(a,b){
+print(a+b);
 }
-
-PrintHello();
+PrintHello(1,x);

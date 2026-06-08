@@ -1,6 +1,7 @@
 namespace TheCompiler.Parser.AST;
 
-public class FunctionCallStatement(string name) : Statement
+public class FunctionCallExpression(string name,List<Expression> arguments) : Expression
 {
     public string Name { get; } = name;
+    public List<Expression> Arguments = arguments;
 }

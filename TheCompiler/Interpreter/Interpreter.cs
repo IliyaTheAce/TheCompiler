@@ -1,11 +1,12 @@
+using TheCompiler.Exceptions;
 using TheCompiler.Lexer;
 using TheCompiler.Parser.AST;
 
-namespace TheCompiler.Interprator;
+namespace TheCompiler.Interpreter;
 
 public class Interpreter
 {
-    private readonly Dictionary<string, object> _variables = new();
+    private readonly Stack<Dictionary<string, object>> _scopes = new();
 
     private readonly Dictionary<
         string,
@@ -14,6 +15,7 @@ public class Interpreter
 
     public void Execute(List<Statement> statements)
     {
+        _scopes.Push(new Dictionary<string, object>());
         foreach (var statement in statements)
         {
             ExecuteStatement(statement);
@@ -47,19 +49,13 @@ public class Interpreter
             case FunctionDeclaration functionDeclaration:
                 ExecuteFunctionDeclaration(functionDeclaration);
                 break;
-            
-            case FunctionCallStatement funcCall:
-                ExecuteCallFunction(funcCall);
-                break;
-        }
-    }
 
-    private void ExecuteCallFunction(FunctionCallStatement funcCall)
-    {
-        var func =  _functions[funcCall.Name];
-        foreach(var stmt in func.Body)
-        {
-            ExecuteStatement(stmt);
+            case ExpressionStatement stmt:
+                Evaluate(stmt.Expression);
+                break;
+
+            case ReturnStatement returnStatement:
+                throw new ReturnException(Evaluate(returnStatement.Expression));
         }
     }
 
@@ -75,7 +71,7 @@ public class Interpreter
     {
         object value = Evaluate(variable.Value);
 
-        _variables[variable.Name] = value;
+        _scopes.Peek()[variable.Name] = value;
     }
 
     private void ExecuteVariableDeclaration(
@@ -83,7 +79,7 @@ public class Interpreter
     {
         object value = Evaluate(variable.Value);
 
-        _variables[variable.Name] = value;
+        _scopes.Peek()[variable.Name] = value;
     }
 
     private void ExecutePrint(PrintStatement print)
@@ -140,7 +136,7 @@ public class Interpreter
                 return number.Value;
 
             case IdentifierExpression identifier:
-                return _variables[identifier.Name];
+                return _scopes.Peek()[identifier.Name];
 
             case BinaryExpression binary:
                 return EvaluateBinary(binary);
@@ -151,11 +147,49 @@ public class Interpreter
             case UnaryExpression unary:
                 return EvaluateUnary(unary);
 
+            case FunctionCallExpression funcCall:
+                return EvaluateFunctionCall(funcCall);
+
+
             default:
                 throw new Exception(
                     $"Unknown expression type {expression.GetType()}"
                 );
         }
+    }
+
+    private object EvaluateFunctionCall(FunctionCallExpression funcCall)
+    {
+        var func = _functions[funcCall.Name];
+        if (func.Params.Count != funcCall.Arguments.Count)
+        {
+            throw new Exception($"Parameter count mismatch! ({funcCall.Name})");
+        }
+
+        var dict = new Dictionary<string, object>();
+
+        try
+        {
+            for (var i = 0; i < funcCall.Arguments.Count; i++)
+            {
+                dict[func.Params[i]] = Evaluate(funcCall.Arguments[i]);
+            }
+            _scopes.Push(dict);
+            foreach (var stmt in func.Body)
+            {
+                ExecuteStatement(stmt);
+            }
+        }
+        catch (ReturnException e)
+        {
+            return e.Value;
+        }
+        finally
+        {
+            _scopes.Pop();
+        }
+        
+        return null;
     }
 
     private object EvaluateBinary(BinaryExpression binary)

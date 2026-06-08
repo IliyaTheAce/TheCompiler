@@ -35,6 +35,18 @@ public class AstPrinter
             case StringExpression str:
                 Console.WriteLine($"{indent}String({str.String})");
                 break;
+            
+            case FunctionCallExpression funcCall:
+                Console.WriteLine($"{indent}FunctionCall({funcCall.Name})");
+                if (funcCall.Arguments.Count > 0)
+                {
+                    Console.WriteLine($"{indent}Arguments:");
+                    foreach (var arg in funcCall.Arguments)
+                    {
+                        Print(arg, indent + "   ");
+                    }
+                }
+                break;
         }
     }
 }

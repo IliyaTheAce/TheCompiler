@@ -74,6 +74,7 @@ public class Lexer(string source)
                     "and" => TokenType.And,
                     "or" => TokenType.Or,
                     "func" => TokenType.Func,
+                    "return" => TokenType.Return,
                     _ => TokenType.Identifier
                 };
                 _tokens.Add(new Token(type, text,_line,startPosition));
@@ -156,6 +157,10 @@ public class Lexer(string source)
                 
                 case '}':
                     _tokens.Add(new Token(TokenType.CloseBracket, "}",_line,startPosition));
+                    break;     
+                
+                case ',':
+                    _tokens.Add(new Token(TokenType.Comma, ",",_line,startPosition));
                     break;
             }
             

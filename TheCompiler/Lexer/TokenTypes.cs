@@ -45,5 +45,7 @@ public enum TokenType
     EndOfFile,
     String,
     
-    Func
+    Func,
+    Return,
+    Comma
 }
