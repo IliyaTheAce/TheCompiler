@@ -2,8 +2,9 @@
 using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
+using TheCompiler.Semantic;
 
-string source = File.ReadAllText("../../../Samples/Source8.tc");
+string source = File.ReadAllText("../../../Samples/Source9.tc");
 
 var lexer = new Lexer(source);
 var tokens = lexer.GetTokens();
@@ -22,6 +23,9 @@ foreach (var node in statements)
 {
     Print(node);
 }
+
+var semantic = new SemanticAnalyzer();
+semantic.Analyze(statements);
 
 Console.WriteLine($" ----- Output ----- \n");
 
