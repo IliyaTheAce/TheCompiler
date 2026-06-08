@@ -1,0 +1,7 @@
+let x = true;
+
+if(x == false){
+    print("It was false");
+}else{
+    print("it was true");
+}

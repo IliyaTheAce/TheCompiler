@@ -1,6 +1,11 @@
 let x = true;
+let y = x > 5;
 
+let z = !(5+10 < 10);
 
 if(x == true){
-print(x);
+print(-10);
 }
+
+print(y and z);
+print(z or y);

@@ -22,6 +22,7 @@ public enum TokenType
     Semicolon,
     
     If,
+    Else,
     While,
     
     DoubleEquals,
@@ -32,11 +33,19 @@ public enum TokenType
     GreaterThanEquals,
     LessThanEquals,
     
+    And,
+    Or,
+    
     OpenBracket,
     CloseBracket,
     
     True,
     False,
     
-    EndOfFile
+    EndOfFile,
+    String,
+    
+    Func,
+    Return,
+    Comma
 }

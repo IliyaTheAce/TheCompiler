@@ -14,6 +14,15 @@ public class AstPrinter
 
             case IdentifierExpression id:
                 Console.WriteLine($"{indent}Identifier({id.Name})");
+                break;    
+            
+            case BooleanExpression boolean:
+                Console.WriteLine($"{indent}boolean({boolean.Value})");
+                break;  
+            
+            case UnaryExpression unary:
+                Console.WriteLine($"{indent}Not");
+                Print(unary.Right, indent + "  ");
                 break;
 
             case BinaryExpression bin:
@@ -21,6 +30,22 @@ public class AstPrinter
 
                 Print(bin.Left, indent + "  ");
                 Print(bin.Right, indent + "  ");
+                break;
+            
+            case StringExpression str:
+                Console.WriteLine($"{indent}String({str.String})");
+                break;
+            
+            case FunctionCallExpression funcCall:
+                Console.WriteLine($"{indent}FunctionCall({funcCall.Name})");
+                if (funcCall.Arguments.Count > 0)
+                {
+                    Console.WriteLine($"{indent}Arguments:");
+                    foreach (var arg in funcCall.Arguments)
+                    {
+                        Print(arg, indent + "   ");
+                    }
+                }
                 break;
         }
     }

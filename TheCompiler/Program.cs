@@ -1,12 +1,12 @@
-﻿using TheCompiler.Interprator;
+﻿using TheCompiler.Interpreter;
 using TheCompiler.Lexer;
 using TheCompiler.Parser;
 using TheCompiler.Parser.AST;
+using TheCompiler.Semantic;
 
-string source = File.ReadAllText("../../../Samples/Source5.tc");
+string source = File.ReadAllText("../../../Samples/Source9.tc");
 
-// Console.WriteLine(source);
-var lexer  = new Lexer(source);
+var lexer = new Lexer(source);
 var tokens = lexer.GetTokens();
 
 Console.WriteLine($" ----- Tokens: {tokens.Count} ----- \n");
@@ -16,13 +16,16 @@ foreach (var token in tokens)
 }
 
 var parser = new Parser(tokens);
-var statements  = parser.Parse();
+var statements = parser.Parse();
 
 Console.WriteLine($" ----- Parsed Nodes: {statements.Count} ----- \n");
 foreach (var node in statements)
 {
     Print(node);
 }
+
+var semantic = new SemanticAnalyzer();
+semantic.Analyze(statements);
 
 Console.WriteLine($" ----- Output ----- \n");
 
@@ -44,27 +47,53 @@ void Print(Statement stmt, string indent = "")
             Console.WriteLine($"{indent}PrintStatement");
 
             AstPrinter.Print(print.Exp, indent + "  ");
-            break;  
-        
+            break;
+
         case IfStatement If:
             Console.WriteLine($"{indent}IfStatement");
             Console.WriteLine($"{indent}Condition:");
             AstPrinter.Print(If.Condition, indent + "   ");
             Console.WriteLine($"{indent}Body:");
             foreach (Statement blockStatement in If.Block)
-            { 
-                Print(blockStatement , "   ");
+            {
+                Print(blockStatement, "   ");
             }
-            break;  
+
+            break;
         case WhileStatement While:
             Console.WriteLine($"{indent}WhileStatement");
             Console.WriteLine($"{indent}Condition:");
             AstPrinter.Print(While.Condition, indent + "   ");
             Console.WriteLine($"{indent}Body:");
             foreach (Statement blockStatement in While.Block)
-            { 
-                Print(blockStatement , "   ");
+            {
+                Print(blockStatement, "   ");
             }
+
             break;
+
+        case VariableAssignment assignment:
+            Console.WriteLine($"{indent}VariableAssignment({assignment.Name})");
+            AstPrinter.Print(assignment.Value, indent + "   ");
+            break;
+
+        case FunctionDeclaration functionDeclaration:
+            Console.WriteLine($"{indent}FunctionDeclaration({functionDeclaration.Name})");
+            if (functionDeclaration.Params.Count > 0)
+            {
+
+                Console.WriteLine($"{indent}Parameters:");
+                foreach (var param in functionDeclaration.Params)
+                {
+                    Console.WriteLine($"{indent}    {param}");
+                }
+            }
+
+            Console.WriteLine($"{indent}Block:");
+            foreach (Statement blockStatement in functionDeclaration.Body)
+            {
+                Print(blockStatement, "   ");
+            }
+            break; 
     }
 }

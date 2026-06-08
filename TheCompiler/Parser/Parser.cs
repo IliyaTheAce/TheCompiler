@@ -1,5 +1,8 @@
 using TheCompiler.Lexer;
 using TheCompiler.Parser.AST;
+using BinaryExpression = TheCompiler.Parser.AST.BinaryExpression;
+using UnaryExpression = TheCompiler.Parser.AST.UnaryExpression;
+using Expression = TheCompiler.Parser.AST.Expression;
 
 namespace TheCompiler.Parser;
 
@@ -7,13 +10,14 @@ public class Parser(List<Token> tokens)
 {
     private List<Statement> _statements = new();
     private int _current = 0;
+
     public List<Statement> Parse()
     {
         while (_current < tokens.Count && tokens[_current].Type != TokenType.EndOfFile)
         {
             _statements.Add(ParseStatement());
         }
-        
+
         return _statements;
     }
 
@@ -24,27 +28,101 @@ public class Parser(List<Token> tokens)
 
         if (Match(TokenType.Print))
             return ParsePrintStatement();
-        
+
         if (Match(TokenType.If))
             return ParseIfStatement();
-        
+
         if (Match(TokenType.While))
             return ParseWhileStatement();
-        
-        if(Match(TokenType.Identifier))
-            return ParseVariableAssignment();
 
-        throw new Exception("Unknown statement");
+        if (Match(TokenType.Func))
+            return ParseFunctionDeceleration();
+
+        if (Match(TokenType.Return))
+            return ParseFunctionReturn();
+
+        
+        return ParseExpressionOrAssignmentStatement();
     }
 
-    private Statement ParseVariableAssignment()
+    private ReturnStatement ParseFunctionReturn()
     {
-        Token name = Previous();
-        Consume(TokenType.Equal);
-        var exp = ParseExpression();
+        var value = ParseExpression();
+        Consume(TokenType.Semicolon);
+        return new ReturnStatement(value);
+    }
+
+    private Statement ParseExpressionOrAssignmentStatement()
+    {
+        Expression expr = ParseExpression();
+
+        // assignment detection
+        if (expr is IdentifierExpression id &&
+            Match(TokenType.Equal))
+        {
+            Expression value = ParseExpression();
+            Consume(TokenType.Semicolon);
+
+            return new VariableAssignment(value,
+                id.Name);
+        }
+
         Consume(TokenType.Semicolon);
 
-        return new VariableAssignment(exp, name.Lexeme);
+        return new ExpressionStatement(expr);
+    }
+
+    private Expression ParseFunctionCall(Token id)
+    {
+        Consume(TokenType.OpenParan);
+
+        List<Expression> args = new();
+
+        if (Peek().Type != TokenType.CloseParan)
+        {
+            args.Add(ParseExpression());
+
+            while (Peek().Type == TokenType.Comma)
+            {
+                Consume(TokenType.Comma);
+                args.Add(ParseExpression());
+            }
+        }
+
+        Consume(TokenType.CloseParan);
+        return new FunctionCallExpression(id.Lexeme, args);
+    }
+
+    private Statement ParseFunctionDeceleration()
+    {
+        string name = Consume(TokenType.Identifier).Lexeme;
+        Consume(TokenType.OpenParan);
+
+        List<string> parameters = new();
+        while (true)
+        {
+            if (Peek().Type == TokenType.Identifier)
+            {
+                parameters.Add(Advance().Lexeme);
+            }
+
+            if (Peek().Type != TokenType.Comma)
+            {
+                break;
+            }
+
+            Consume(TokenType.Comma);
+        }
+
+        Consume(TokenType.CloseParan);
+        Consume(TokenType.OpenBracket);
+        List<Statement> blockStatements = new();
+        while (!Match(TokenType.CloseBracket))
+        {
+            blockStatements.Add(ParseStatement());
+        }
+
+        return new FunctionDeclaration(name, blockStatements, parameters);
     }
 
     private Statement ParseIfStatement()
@@ -58,9 +136,21 @@ public class Parser(List<Token> tokens)
         {
             blockStatements.Add(ParseStatement());
         }
-        return new IfStatement(condition, blockStatements);
+
+        if (!Match(TokenType.Else)) return new IfStatement(condition, blockStatements, null);
+
+        var elseBlockStatements = new List<Statement>();
+
+        Consume(TokenType.OpenBracket);
+
+        while (!Match(TokenType.CloseBracket))
+        {
+            elseBlockStatements.Add(ParseStatement());
+        }
+
+        return new IfStatement(condition, blockStatements, elseBlockStatements);
     }
-    
+
     private Statement ParseWhileStatement()
     {
         Consume(TokenType.OpenParan);
@@ -72,6 +162,7 @@ public class Parser(List<Token> tokens)
         {
             blockStatements.Add(ParseStatement());
         }
+
         return new WhileStatement(condition, blockStatements);
     }
 
@@ -102,7 +193,46 @@ public class Parser(List<Token> tokens)
 
     private Expression ParseExpression()
     {
-        return ParseComparison();
+        if (tokens[_current].Type != TokenType.String) return ParseOr();
+        Expression exp = new StringExpression(tokens[_current].Lexeme);
+        Advance();
+        return exp;
+    }
+
+    private Expression ParseOr()
+    {
+        Expression expr = ParseAnd();
+
+        while (
+            Peek().Type == TokenType.Or)
+        {
+            Token op = Advance();
+            Expression right = ParseAnd();
+            expr = new BinaryExpression(
+                expr,
+                op,
+                right);
+        }
+
+        return expr;
+    }
+
+    private Expression ParseAnd()
+    {
+        Expression expr = ParseComparison();
+
+        while (
+            Peek().Type == TokenType.And)
+        {
+            Token op = Advance();
+            Expression right = ParseComparison();
+            expr = new BinaryExpression(
+                expr,
+                op,
+                right);
+        }
+
+        return expr;
     }
 
     private Expression ParseComparison()
@@ -123,7 +253,7 @@ public class Parser(List<Token> tokens)
                 op,
                 right);
         }
-        
+
         return expr;
     }
 
@@ -148,10 +278,10 @@ public class Parser(List<Token> tokens)
 
         return expr;
     }
-    
+
     private Expression ParseFactor()
     {
-        Expression expr = ParsePrimary();
+        Expression expr = ParseUnary();
 
         while (
             Peek().Type == TokenType.Star ||
@@ -159,7 +289,7 @@ public class Parser(List<Token> tokens)
         {
             Token op = Advance();
 
-            Expression right = ParsePrimary();
+            Expression right = ParseUnary();
 
             expr = new BinaryExpression(
                 expr,
@@ -170,9 +300,27 @@ public class Parser(List<Token> tokens)
 
         return expr;
     }
-    
+
+    private Expression ParseUnary()
+    {
+        if (Match(TokenType.Not) ||
+            Match(TokenType.Minus))
+        {
+            Token op = Previous();
+
+            Expression right = ParseUnary();
+
+            return new UnaryExpression(
+                op,
+                right);
+        }
+
+        return ParsePrimary();
+    }
+
     private Expression ParsePrimary()
     {
+        Console.WriteLine(tokens[_current]);
         if (Match(TokenType.Number))
         {
             Token token = Previous();
@@ -184,11 +332,12 @@ public class Parser(List<Token> tokens)
 
         if (Match(TokenType.Identifier))
         {
-            Token token = Previous();
+            Token id = Previous();
 
-            return new IdentifierExpression(
-                token.Lexeme
-            );
+            if (Peek().Type == TokenType.OpenParan)
+                return ParseFunctionCall(id);
+
+            return new IdentifierExpression(id.Lexeme);
         }
 
         if (Match(TokenType.OpenParan))
@@ -204,29 +353,28 @@ public class Parser(List<Token> tokens)
         {
             return new BooleanExpression(true);
         }
-        
+
         if (Match(TokenType.False))
         {
             return new BooleanExpression(false);
         }
-        
 
         throw new Exception(
             $"Unexpected token {Peek().Type}"
         );
     }
-    
-    
+
+
     private Token Previous()
     {
         return tokens[_current - 1];
     }
-    
+
     private Token Peek()
     {
         return tokens[_current];
     }
-    
+
     private Token Advance()
     {
         return tokens[_current++];
@@ -234,12 +382,12 @@ public class Parser(List<Token> tokens)
 
     private bool Match(TokenType type)
     {
-        if(Peek().Type != type)
+        if (Peek().Type != type)
             return false;
         Advance();
         return true;
     }
-    
+
     private Token Consume(TokenType expectedType)
     {
         if (Peek().Type == expectedType)
@@ -252,26 +400,5 @@ public class Parser(List<Token> tokens)
             $"column {current.Column}. " +
             $"Expected {expectedType} but found {current.Type}."
         );
-    }
-    
-    public static void Print(Expression expr, string indent = "")
-    {
-        switch (expr)
-        {
-            case NumberExpression number:
-                Console.WriteLine($"{indent}Number({number.Value})");
-                break;
-
-            case IdentifierExpression id:
-                Console.WriteLine($"{indent}Identifier({id.Name})");
-                break;
-
-            case BinaryExpression bin:
-                Console.WriteLine($"{indent}Binary({bin.Operator.Lexeme})");
-
-                Print(bin.Left, indent + "  ");
-                Print(bin.Right, indent + "  ");
-                break;
-        }
     }
 }

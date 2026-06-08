@@ -1,28 +1,35 @@
+using TheCompiler.Exceptions;
 using TheCompiler.Lexer;
 using TheCompiler.Parser.AST;
 
-namespace TheCompiler.Interprator;
+namespace TheCompiler.Interpreter;
 
 public class Interpreter
 {
-    private readonly Dictionary<string, object> _variables = new();
+    private readonly Stack<Dictionary<string, object>> _scopes = new();
+
+    private readonly Dictionary<
+        string,
+        FunctionDeclaration> _functions
+        = new();
 
     public void Execute(List<Statement> statements)
     {
+        _scopes.Push(new Dictionary<string, object>());
         foreach (var statement in statements)
         {
             ExecuteStatement(statement);
         }
     }
-    
+
     private void ExecuteStatement(Statement statement)
     {
         switch (statement)
         {
             case VariableDeclaration variable:
                 ExecuteVariableDeclaration(variable);
-                break;     
-            
+                break;
+
             case VariableAssignment variable:
                 ExecuteVariableAssignment(variable);
                 break;
@@ -30,14 +37,33 @@ public class Interpreter
             case PrintStatement print:
                 ExecutePrint(print);
                 break;
-            
+
             case IfStatement ifStmt:
                 ExecuteIfStatement(ifStmt);
                 break;
-            
+
             case WhileStatement whileStmt:
                 ExecuteWhileStatement(whileStmt);
                 break;
+
+            case FunctionDeclaration functionDeclaration:
+                ExecuteFunctionDeclaration(functionDeclaration);
+                break;
+
+            case ExpressionStatement stmt:
+                Evaluate(stmt.Expression);
+                break;
+
+            case ReturnStatement returnStatement:
+                throw new ReturnException(Evaluate(returnStatement.Expression));
+        }
+    }
+
+    private void ExecuteFunctionDeclaration(FunctionDeclaration functionDeclaration)
+    {
+        if (!_functions.TryAdd(functionDeclaration.Name, functionDeclaration))
+        {
+            throw new Exception("Function already defined");
         }
     }
 
@@ -45,7 +71,7 @@ public class Interpreter
     {
         object value = Evaluate(variable.Value);
 
-        _variables[variable.Name] = value;
+        _scopes.Peek()[variable.Name] = value;
     }
 
     private void ExecuteVariableDeclaration(
@@ -53,16 +79,16 @@ public class Interpreter
     {
         object value = Evaluate(variable.Value);
 
-        _variables[variable.Name] = value;
+        _scopes.Peek()[variable.Name] = value;
     }
-    
+
     private void ExecutePrint(PrintStatement print)
     {
         object value = Evaluate(print.Exp);
 
         Console.WriteLine(value);
     }
-    
+
     private void ExecuteIfStatement(
         IfStatement statement)
     {
@@ -77,8 +103,16 @@ public class Interpreter
                 ExecuteStatement(bodyStatement);
             }
         }
+        else
+        {
+            if (statement.ElseBlock == null) return;
+            foreach (var elseStatement in statement.ElseBlock)
+            {
+                ExecuteStatement(elseStatement);
+            }
+        }
     }
-    
+
     private void ExecuteWhileStatement(
         WhileStatement statement)
     {
@@ -91,22 +125,31 @@ public class Interpreter
             }
         }
     }
-    
+
     private object Evaluate(Expression expression)
     {
         switch (expression)
         {
+            case StringExpression stringExpression:
+                return stringExpression.String;
             case NumberExpression number:
                 return number.Value;
 
             case IdentifierExpression identifier:
-                return _variables[identifier.Name];
+                return _scopes.Peek()[identifier.Name];
 
             case BinaryExpression binary:
-                return EvaluateBinary(binary);     
-            
+                return EvaluateBinary(binary);
+
             case BooleanExpression boolean:
                 return boolean.Value;
+
+            case UnaryExpression unary:
+                return EvaluateUnary(unary);
+
+            case FunctionCallExpression funcCall:
+                return EvaluateFunctionCall(funcCall);
+
 
             default:
                 throw new Exception(
@@ -114,7 +157,41 @@ public class Interpreter
                 );
         }
     }
-    
+
+    private object EvaluateFunctionCall(FunctionCallExpression funcCall)
+    {
+        var func = _functions[funcCall.Name];
+        if (func.Params.Count != funcCall.Arguments.Count)
+        {
+            throw new Exception($"Parameter count mismatch! ({funcCall.Name})");
+        }
+
+        var dict = new Dictionary<string, object>();
+
+        try
+        {
+            for (var i = 0; i < funcCall.Arguments.Count; i++)
+            {
+                dict[func.Params[i]] = Evaluate(funcCall.Arguments[i]);
+            }
+            _scopes.Push(dict);
+            foreach (var stmt in func.Body)
+            {
+                ExecuteStatement(stmt);
+            }
+        }
+        catch (ReturnException e)
+        {
+            return e.Value;
+        }
+        finally
+        {
+            _scopes.Pop();
+        }
+        
+        return null;
+    }
+
     private object EvaluateBinary(BinaryExpression binary)
     {
         int left = Convert.ToInt32(
@@ -125,6 +202,35 @@ public class Interpreter
 
         switch (binary.Operator.Type)
         {
+            case TokenType.And:
+            {
+                bool leftValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Left));
+
+                if (!leftValue)
+                    return false;
+                bool rightValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Right));
+
+                return rightValue;
+            }
+            case TokenType.Or:
+            {
+                bool leftValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Left));
+
+                if (leftValue)
+                    return true;
+                bool rightValue =
+                    Convert.ToBoolean(
+                        Evaluate(binary.Right));
+
+                return rightValue;
+            }
+
             case TokenType.Plus:
                 return left + right;
 
@@ -148,11 +254,29 @@ public class Interpreter
 
             case TokenType.LessThan:
                 return left < right;
-            
+
             default:
                 throw new Exception(
                     $"Unsupported operator {binary.Operator.Type}"
                 );
+        }
+    }
+
+    private object EvaluateUnary(UnaryExpression unary)
+    {
+        object value = Evaluate(unary.Right);
+
+        switch (unary.Operator.Type)
+        {
+            case TokenType.Not:
+                return !Convert.ToBoolean(value);
+
+            case TokenType.Minus:
+                return -Convert.ToInt32(value);
+
+            default:
+                throw new Exception(
+                    $"Unsupported unary operator {unary.Operator.Type}");
         }
     }
 }
